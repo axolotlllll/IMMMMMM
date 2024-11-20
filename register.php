@@ -125,84 +125,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 1rem 1rem 1rem 3rem;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            border-radius: 10px;
             color: white;
             font-size: 1rem;
             transition: all 0.3s ease;
-        }
-
-        /* Flatpickr Custom Styles */
-        .flatpickr-calendar {
-            background: rgba(255, 255, 255, 0.95) !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-            border-radius: 15px !important;
-            border: none !important;
-            backdrop-filter: blur(10px) !important;
-        }
-
-        .flatpickr-day {
-            border-radius: 10px !important;
-            transition: all 0.3s ease !important;
-        }
-
-        .flatpickr-day.selected {
-            background: #45b7d1 !important;
-            border-color: #45b7d1 !important;
-        }
-
-        .flatpickr-day:hover {
-            background: rgba(69, 183, 209, 0.2) !important;
-        }
-
-        .flatpickr-months .flatpickr-month {
-            background: #45b7d1 !important;
-            color: white !important;
-            fill: white !important;
-            border-radius: 15px 15px 0 0 !important;
-        }
-
-        .flatpickr-current-month {
-            color: white !important;
-        }
-
-        .flatpickr-monthDropdown-months {
-            background: #45b7d1 !important;
-            color: white !important;
-        }
-
-        .flatpickr-weekdays {
-            background: #45b7d1 !important;
-        }
-
-        span.flatpickr-weekday {
-            background: #45b7d1 !important;
-            color: white !important;
-        }
-
-        .flatpickr-months .flatpickr-prev-month,
-        .flatpickr-months .flatpickr-next-month {
-            fill: white !important;
-        }
-
-        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
             appearance: none;
-            padding-right: 2rem;
-            cursor: pointer;
         }
 
-        .form-group::after {
-            content: '\f107';
-            font-family: 'Font Awesome 5 Free';
-            font-weight: 900;
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255, 255, 255, 0.8);
-            pointer-events: none;
+        select::-ms-expand {
+            display: none;
         }
 
-        input::placeholder, select {
+        select option {
+            background: #45b7d1;
+            color: white;
+        }
+
+        input::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
 
@@ -261,11 +202,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .login-link a:hover {
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        option {
-            background: #2c3e50;
-            color: white;
         }
 
         @media (max-width: 480px) {
