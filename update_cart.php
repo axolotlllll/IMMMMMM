@@ -28,9 +28,9 @@ if (isset($_POST['cart_id']) && isset($_POST['quantity']) && isset($_POST['updat
     try {
         $conn->beginTransaction();
 
-        // Get current cart item details
+        // Get current cart item and product details
         $getCartItem = $conn->prepare("
-            SELECT c.*, p.quantity as available_stock, p.price 
+            SELECT c.*, p.quantity as available_stock, p.price, p.product_name 
             FROM cart c
             JOIN products p ON c.product_id = p.product_id
             WHERE c.id = ? AND c.user_id = ? AND c.status = 'active'
@@ -39,18 +39,8 @@ if (isset($_POST['cart_id']) && isset($_POST['quantity']) && isset($_POST['updat
         $cartItem = $getCartItem->fetch(PDO::FETCH_ASSOC);
 
         if ($cartItem) {
-            $quantityDiff = $newQuantity - $cartItem['quantity'];
-            $newStockQuantity = $cartItem['available_stock'] - $quantityDiff;
-
-            if ($newStockQuantity >= 0) {
-                // Update product stock
-                $updateProduct = $conn->prepare("
-                    UPDATE products 
-                    SET quantity = ? 
-                    WHERE product_id = ?
-                ");
-                $updateProduct->execute([$newStockQuantity, $cartItem['product_id']]);
-
+            // Check if requested quantity is available
+            if ($newQuantity <= $cartItem['available_stock']) {
                 // Update cart quantity
                 $updateCart = $conn->prepare("
                     UPDATE cart 
@@ -82,7 +72,7 @@ if (isset($_POST['cart_id']) && isset($_POST['quantity']) && isset($_POST['updat
                 }
                 $response['cart_total'] = $cart_total;
             } else {
-                $response['message'] = 'Not enough stock available';
+                $response['message'] = 'Not enough stock available. Available: ' . $cartItem['available_stock'];
             }
         } else {
             $response['message'] = 'Cart item not found';
@@ -99,5 +89,4 @@ if (isset($_POST['cart_id']) && isset($_POST['quantity']) && isset($_POST['updat
 }
 
 echo json_encode($response);
-
 ?>

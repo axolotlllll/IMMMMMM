@@ -10,17 +10,22 @@ if (!isset($_SESSION['user_id'])) {
 // Get username from session
 $username = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest';
 
-// Generate a friendly greeting
+// Generate a medieval-styled greeting in Bisaya
 $greetings = [
-    "Welcome back, $username!",
-    "Hello, $username! Ready to shop?",
-    "Welcome back, $username!",
-    "Let's find something amazing today, $username!",
-    "Your shopping adventure starts now, $username!"
+    "Maayong pagbalik, $username ang Gamhanan.",
+    "Ah, $username ang Mahimayaon mipauli na!",
+    "Pagdayeg, $username ang Maalamon.",
+    "Himaya kanimo, $username ang Isug!",
+    "Maayong pagbalik, $username ang Banggiitan.",
+    "Ang gingharian nagpasalamat sa imong pagbalik, $username ang Mahalangdon.",
+    "Usa ka halangdon nga pagbalik, $username ang Kusgan!"
 ];
 
 // Select a random greeting
 $greeting = $greetings[array_rand($greetings)];
+
+
+
 
 require_once 'connection.php';
 // Fetch products from the database
@@ -475,6 +480,10 @@ document.getElementById('viewCartBtn').addEventListener('click', function(e) {
         }
     }
     </script>
+
+</div>
+</body>
+</html>
 
 </div>
 </body>

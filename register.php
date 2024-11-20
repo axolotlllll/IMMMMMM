@@ -44,124 +44,320 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Register - Celebrity Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Comic+Sans+MS:wght@700&display=swap');
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
         body {
-            font-family: 'Comic Sans MS', sans-serif;
-            background: linear-gradient(135deg, #ff9800, #f44336, #2196f3);
-            background-size: 300% 300%;
-            animation: bgAnimation 5s ease infinite;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1, #ff6b6b);
+            background-size: 300% 300%;
+            animation: color 12s ease-in-out infinite;
+            padding: 2rem;
         }
 
-        @keyframes bgAnimation {
-            0% { background-position: 0% 50%; }
+        @keyframes color {
+            0% { background-position: 0 50%; }
             50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            100% { background-position: 0 50%; }
         }
 
         .register-container {
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0px 15px 25px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            width: 350px;
-            text-align: center;
-        }
-
-        .register-container h2 {
-            font-size: 2rem;
-            color: #ff5722;
-            margin-bottom: 20px;
-        }
-
-        .register-container label {
-            display: block;
-            margin-bottom: 5px;
-            color: #2196f3;
-            font-size: 1.1rem;
-            text-align: left;
-        }
-
-        .register-container input,
-        .register-container select {
-            width: 90%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 2px solid #ffeb3b;
-            border-radius: 10px;
-            background: #e0f7fa;
-            color: #333;
-            font-size: 1rem;
-            text-align: center;
-            transition: border-color 0.3s;
-        }
-
-        .register-container button {
             width: 100%;
-            padding: 10px;
-            background: linear-gradient(45deg, #ff5722, #ff9800);
-            border: none;
-            border-radius: 10px;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .register-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.47);
+        }
+
+        h1 {
             color: white;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.8);
             font-size: 1.2rem;
-            font-weight: bold;
+            z-index: 1;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Flatpickr Custom Styles */
+        .flatpickr-calendar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 15px !important;
+            border: none !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .flatpickr-day {
+            border-radius: 10px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .flatpickr-day.selected {
+            background: #45b7d1 !important;
+            border-color: #45b7d1 !important;
+        }
+
+        .flatpickr-day:hover {
+            background: rgba(69, 183, 209, 0.2) !important;
+        }
+
+        .flatpickr-months .flatpickr-month {
+            background: #45b7d1 !important;
+            color: white !important;
+            fill: white !important;
+            border-radius: 15px 15px 0 0 !important;
+        }
+
+        .flatpickr-current-month {
+            color: white !important;
+        }
+
+        .flatpickr-monthDropdown-months {
+            background: #45b7d1 !important;
+            color: white !important;
+        }
+
+        .flatpickr-weekdays {
+            background: #45b7d1 !important;
+        }
+
+        span.flatpickr-weekday {
+            background: #45b7d1 !important;
+            color: white !important;
+        }
+
+        .flatpickr-months .flatpickr-prev-month,
+        .flatpickr-months .flatpickr-next-month {
+            fill: white !important;
+        }
+
+        select {
+            appearance: none;
+            padding-right: 2rem;
             cursor: pointer;
-            transition: background 0.4s;
         }
 
-        .register-container button:hover {
-            background: linear-gradient(45deg, #ff9800, #ff5722);
+        .form-group::after {
+            content: '\f107';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
         }
 
-        .error-message {
-            color: red;
-            margin-bottom: 15px;
+        input::placeholder, select {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .error {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid rgba(255, 87, 87, 0.2);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: white;
+        }
+
+        .login-link a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .login-link a:hover {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        option {
+            background: #2c3e50;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            input, select, button {
+                padding: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="register-container">
-        <h2>Register</h2>
+        <h1>Create Account</h1>
         <?php if (isset($error)): ?>
-            <div class="error-message"><?= htmlspecialchars($error) ?></div>
+            <div class="error">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+            </div>
         <?php endif; ?>
-        <form action="register.php" method="POST">
-            <label for="first_name">First Name:</label>
-            <input type="text" name="first_name" id="first_name" required>
+        
+        <form method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="first_name" placeholder="First Name" required>
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="last_name" placeholder="Last Name" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <i class="fas fa-calendar"></i>
+                    <input type="text" name="birthdate" id="birthdate" placeholder="Select Birthdate" required>
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-venus-mars"></i>
+                    <select name="gender" required>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <i class="fas fa-map-marker-alt"></i>
+                <input type="text" name="address" placeholder="Address" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <i class="fas fa-user-circle"></i>
+                    <input type="text" name="username" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Password" required>
+                </div>
+            </div>
             
-            <label for="last_name">Last Name:</label>
-            <input type="text" name="last_name" id="last_name" required>
-
-            <label for="address">Address:</label>
-            <input type="text" name="address" id="address" required>
-
-            <label for="birthdate">Birthdate:</label>
-            <input type="date" name="birthdate" id="birthdate" required>
-
-            <label for="gender">Gender:</label>
-            <select name="gender" id="gender" required>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-            </select>
-
-            <label for="username">Username:</label>
-            <input type="text" name="username" id="username" required>
-
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password" required>
-
-            <!-- Removed the user_type dropdown -->
-            <button type="submit">Register</button>
+            <button type="submit">
+                <i class="fas fa-user-plus"></i> Register
+            </button>
         </form>
-        <p>Already have an account? <a href="login.php">Login here</a></p>
+        <div class="login-link">
+            Already have an account? <a href="login.php">Login here</a>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        flatpickr("#birthdate", {
+            dateFormat: "Y-m-d",
+            maxDate: new Date(),
+            disableMobile: "true",
+            animate: true,
+            theme: "material_blue"
+        });
+    </script>
 </body>
 </html>

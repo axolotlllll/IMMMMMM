@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Load both active and saved cart items
             $cartQuery = $conn->prepare("
-                SELECT c.*, p.quantity as available_stock 
+                SELECT c.*, p.product_name, p.price, p.quantity as available_stock 
                 FROM cart c 
                 JOIN products p ON c.product_id = p.product_id 
                 WHERE c.user_id = ? AND (c.status = 'active' OR c.status = 'saved')
@@ -32,21 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cartQuery->execute([$user['id']]);
             $cartItems = $cartQuery->fetchAll(PDO::FETCH_ASSOC);
             
-            // Restore product quantities for saved items and update cart status
+            // Update saved items to active and store in session
             if (!empty($cartItems)) {
                 $conn->beginTransaction();
                 try {
-                    foreach ($cartItems as $item) {
+                    foreach ($cartItems as &$item) {
                         if ($item['status'] === 'saved') {
-                            // Restore product quantity
-                            $updateProduct = $conn->prepare("
-                                UPDATE products 
-                                SET quantity = quantity + ? 
-                                WHERE product_id = ?
-                            ");
-                            $updateProduct->execute([$item['quantity'], $item['product_id']]);
-                            
-
                             // Update cart status to active
                             $updateCart = $conn->prepare("
                                 UPDATE cart 
@@ -54,17 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 WHERE id = ?
                             ");
                             $updateCart->execute([$item['id']]);
+                            $item['status'] = 'active';
                         }
                     }
                     $conn->commit();
+                    $_SESSION['cart'] = $cartItems;
                 } catch (Exception $e) {
                     $conn->rollBack();
                     error_log("Error restoring cart: " . $e->getMessage());
                 }
+            } else {
+                $_SESSION['cart'] = array();
             }
-            
-            // Store cart items in session
-            $_SESSION['cart'] = $cartItems;
             
             // Redirect based on user type
             if ($user['user_type'] == 1) {
@@ -76,12 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Invalid username or password.";
         }
-    } catch (Exception $e) {
-        $error = "An error occurred during login.";
-        error_log("Login error: " . $e->getMessage());
-    } finally {
-        $db->closeConnection();
+    } catch (PDOException $e) {
+        $error = "Error: " . $e->getMessage();
     }
+    
+    $db->closeConnection();
 }
 ?>
 
@@ -90,142 +81,193 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login - Celebrity Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600&family=Righteous&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
 
         body {
-            font-family: 'Baloo 2', cursive;
-            background: linear-gradient(135deg, #ff4081, #7c4dff, #ffeb3b);
-            background-size: 300% 300%;
-            animation: bgAnimation 5s ease infinite;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background-size: 300% 300%;
+            animation: color 12s ease-in-out infinite;
+            padding: 2rem;
         }
 
-        @keyframes bgAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes color {
+            0% {
+                background-position: 0 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0 50%;
+            }
         }
 
         .login-container {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0px 15px 25px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            width: 350px;
-            text-align: center;
-        }
-
-        .login-container h2 {
-            font-family: 'Righteous', sans-serif;
-            font-size: 2rem;
-            color: #ff4081;
-            margin-bottom: 20px;
-        }
-
-        .login-container label {
-            display: block;
-            margin-bottom: 5px;
-            color: #7c4dff;
-            font-size: 1.1rem;
-            text-align: left;
-        }
-
-        .login-container input[type="text"],
-        .login-container input[type="password"] {
-            width: 90%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 2px dashed #ffeb3b;
-            border-radius: 10px;
-            background: #ffccff;
-            color: #333;
-            text-align: center;
-            font-family: 'Baloo 2', sans-serif;
-            font-size: 1.1rem;
-            transition: transform 0.3s ease;
-        }
-
-        .login-container input[type="text"]:focus,
-        .login-container input[type="password"]:focus {
-            border-color: #ff4081;
-            outline: none;
-            transform: scale(1.05);
-        }
-
-        .login-container button {
             width: 100%;
-            padding: 10px;
-            background: linear-gradient(45deg, #ff4081, #ffeb3b);
-            border: none;
-            border-radius: 10px;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.47);
+        }
+
+        h1 {
             color: white;
-            font-weight: bold;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.8);
             font-size: 1.2rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.4s ease, transform 0.2s ease;
-            font-family: 'Righteous', sans-serif;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
         }
 
-        .login-container button:hover {
-            background: linear-gradient(45deg, #ffeb3b, #ff4081);
-            transform: scale(1.1);
-            box-shadow: 0px 5px 15px rgba(255, 192, 203, 0.6);
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .error-message {
-            color: #ff4081;
-            margin: 10px 0;
-            font-weight: bold;
-            font-size: 0.9rem;
-            animation: shake 0.3s ease-in-out;
+        .error {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid rgba(255, 87, 87, 0.2);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(5px);
         }
 
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: white;
         }
 
-        .login-container p {
-            font-size: 0.9rem;
-            color: #7c4dff;
-        }
-
-        .login-container a {
-            color: #ff4081;
-            font-weight: bold;
-            text-decoration: underline;
-        }
-
-        .login-container a:hover {
-            color: #ffeb3b;
+        .register-link a {
+            color: white;
             text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .register-link a:hover {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            input, button {
+                padding: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h2>Welcome Back!</h2>
+        <h1>Welcome Back!</h1>
         <?php if (isset($error)): ?>
-            <div class="error-message"><?= htmlspecialchars($error) ?></div>
+            <div class="error">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+            </div>
         <?php endif; ?>
-        <form action="login.php" method="POST">
-            <label for="username">Username:</label>
-            <input type="text" name="username" id="username" required>
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password" required>
-            <button type="submit">Login</button>
+        
+        <form method="POST">
+            <div class="form-group">
+                <i class="fas fa-user"></i>
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            
+            <div class="form-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            
+            <button type="submit">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
         </form>
-        <p>DONT HAVE AN ACCOUNT??????????????????<a href="register.php">PISLITA NI !!!!!!!!!!!!!</a></p>
+        <div class="register-link">
+            Don't have an account? <a href="register.php">Register here</a>
+        </div>
     </div>
 </body>
 </html>

@@ -42,8 +42,15 @@ if (isset($_POST['add_to_cart'])) {
             $existingCartItem = $cartQuery->fetch(PDO::FETCH_ASSOC);
 
             if ($existingCartItem) {
-                // Update existing cart item
+                // Check if total quantity would exceed available stock
                 $newCartQuantity = $existingCartItem['quantity'] + $quantity;
+                if ($newCartQuantity > $product['quantity']) {
+                    $_SESSION['error'] = "Cannot add more items than available in stock";
+                    header("Location: user_home.php");
+                    exit();
+                }
+                
+                // Update existing cart item
                 $updateCartQuery = $conn->prepare("
                     UPDATE cart 
                     SET quantity = :quantity, status = 'active' 
@@ -65,13 +72,6 @@ if (isset($_POST['add_to_cart'])) {
                 $insertCartQuery->bindParam(':price', $product['price'], PDO::PARAM_STR);
                 $insertCartQuery->execute();
             }
-
-            // Update product quantity
-            $newQuantity = $product['quantity'] - $quantity;
-            $updateQuery = $conn->prepare("UPDATE products SET quantity = :quantity WHERE product_id = :product_id");
-            $updateQuery->bindParam(':quantity', $newQuantity, PDO::PARAM_INT);
-            $updateQuery->bindParam(':product_id', $productId, PDO::PARAM_INT);
-            $updateQuery->execute();
 
             // Commit transaction
             $conn->commit();

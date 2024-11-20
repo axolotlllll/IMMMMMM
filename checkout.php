@@ -28,7 +28,7 @@ try {
         $total_amount = $product['price'] * $_POST['quantity'];
 
         // Create order
-        $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount) VALUES (?, ?)");
+        $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, status) VALUES (?, ?, 'pending')");
         $stmt->execute([$_SESSION['user_id'], $total_amount]);
         $order_id = $conn->lastInsertId();
 
@@ -48,6 +48,17 @@ try {
             exit();
         }
 
+        // Verify stock availability for all cart items
+        foreach ($_SESSION['cart'] as $item) {
+            $stmt = $conn->prepare("SELECT quantity FROM products WHERE product_id = ?");
+            $stmt->execute([$item['product_id']]);
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$product || $product['quantity'] < $item['quantity']) {
+                throw new Exception("Product '{$item['product_name']}' is not available in requested quantity");
+            }
+        }
+
         // Calculate total amount
         $total_amount = 0;
         foreach ($_SESSION['cart'] as $item) {
@@ -55,7 +66,7 @@ try {
         }
 
         // Create order
-        $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount) VALUES (?, ?)");
+        $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, status) VALUES (?, ?, 'pending')");
         $stmt->execute([$_SESSION['user_id'], $total_amount]);
         $order_id = $conn->lastInsertId();
 
@@ -70,7 +81,11 @@ try {
             $stmt->execute([$item['quantity'], $item['product_id']]);
         }
 
-        // Clear the cart
+        // Clear the cart in database
+        $stmt = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND status = 'active'");
+        $stmt->execute([$_SESSION['user_id']]);
+
+        // Clear the cart in session
         unset($_SESSION['cart']);
     }
 
@@ -82,12 +97,10 @@ try {
 } catch (Exception $e) {
     $conn->rollBack();
     error_log("Error during checkout: " . $e->getMessage());
-    $_SESSION['error'] = "Error processing your order. Please try again.";
+    $_SESSION['error'] = "Error processing your order: " . $e->getMessage();
     header("Location: user_home.php");
     exit();
 } finally {
     $db->closeConnection();
 }
-
 ?>
-

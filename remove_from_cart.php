@@ -23,7 +23,7 @@ if (isset($_POST['cart_id']) && isset($_POST['remove_from_cart'])) {
 
         // Get cart item details before deletion
         $getCartItem = $conn->prepare("
-            SELECT c.*, p.quantity as current_stock, p.price 
+            SELECT c.*, p.price, p.product_name 
             FROM cart c
             JOIN products p ON c.product_id = p.product_id
             WHERE c.id = ? AND c.user_id = ? AND c.status = 'active'
@@ -32,15 +32,6 @@ if (isset($_POST['cart_id']) && isset($_POST['remove_from_cart'])) {
         $cartItem = $getCartItem->fetch(PDO::FETCH_ASSOC);
 
         if ($cartItem) {
-            // Restore product quantity
-            $newStockQuantity = $cartItem['current_stock'] + $cartItem['quantity'];
-            $updateProduct = $conn->prepare("
-                UPDATE products 
-                SET quantity = ? 
-                WHERE product_id = ?
-            ");
-            $updateProduct->execute([$newStockQuantity, $cartItem['product_id']]);
-
             // Delete the cart item
             $deleteCart = $conn->prepare("
                 DELETE FROM cart 
@@ -85,5 +76,4 @@ if (isset($_POST['cart_id']) && isset($_POST['remove_from_cart'])) {
 }
 
 echo json_encode($response);
-
 ?>
