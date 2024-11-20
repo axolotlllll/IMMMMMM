@@ -1,0 +1,266 @@
+/* Modern Admin Dashboard Styles */
+:root {
+    --primary-color: #2c3e50;
+    --accent-color: #3498db;
+    --danger-color: #e74c3c;
+    --success-color: #2ecc71;
+    --background: linear-gradient(135deg, #1a2a3d 0%, #2c3e50 100%);
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--background);
+    min-height: 100vh;
+    margin: 0;
+    color: #fff;
+}
+
+.admin-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.admin-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-controls {
+    display: flex;
+    gap: 15px;
+}
+
+.admin-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.admin-btn.danger {
+    background: rgba(231, 76, 60, 0.3);
+}
+
+.admin-btn.danger:hover {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+.main-content {
+    margin-top: 80px;
+    padding: 2rem;
+}
+
+.search-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 2rem;
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    padding: 0.5rem 1rem;
+    width: 100%;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-color);
+    outline: none;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.product-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.product-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.product-category {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.product-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.action-btn.edit {
+    background: rgba(52, 152, 219, 0.3);
+}
+
+.action-btn.edit:hover {
+    background: rgba(52, 152, 219, 0.4);
+}
+
+.action-btn.delete {
+    background: rgba(231, 76, 60, 0.3);
+}
+
+.action-btn.delete:hover {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    margin-left: 10px;
+}
+
+.stock-badge.in-stock {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.stock-badge.out-of-stock {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.stock-badge i {
+    font-size: 0.9em;
+}
+
+form.d-inline {
+    display: inline-block;
+}
+
+.product-info {
+    margin: 1rem 0;
+}
+
+.product-info p {
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Modal Styles */
+.modal-content {
+    background: rgba(44, 62, 80, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    color: white;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-nav {
+        padding: 1rem;
+    }
+}
