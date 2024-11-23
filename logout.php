@@ -1,9 +1,7 @@
 <?php
-// Start session
 session_start();
 require_once 'connection.php';
 
-// If user has items in cart, save them to database before logout
 if (isset($_SESSION['user_id']) && isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     $db = new Database();
     $conn = $db->openConnection();
@@ -20,7 +18,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['cart']) && !empty($_SESSION[
         ");
         $updateCartQuery->execute([$_SESSION['user_id']]);
         
-        // Don't reduce product quantities since we're just saving the cart state
         
         $conn->commit();
     } catch (Exception $e) {

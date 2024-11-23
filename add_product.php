@@ -22,7 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             die("Error: Only JPEG, PNG and GIF images are allowed.");
         }
 
-        // Generate unique filename
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = uniqid() . '.' . $extension;
         $upload_path = 'product_images/' . $filename;

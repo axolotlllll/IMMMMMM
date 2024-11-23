@@ -1,16 +1,13 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
-// Get username from session
 $username = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest';
 
-// Generate a medieval-styled greeting in Bisaya
 $greetings = [
     "Maayong pagbalik, $username ang Gamhanan.",
     "Ah, $username ang Mahimayaon mipauli na!",
@@ -21,7 +18,6 @@ $greetings = [
     "Usa ka halangdon nga pagbalik, $username ang Kusgan!"
 ];
 
-// Select a random greeting
 $greeting = $greetings[array_rand($greetings)];
 
 
@@ -42,7 +38,6 @@ $products = $query->fetchAll(PDO::FETCH_ASSOC);
 
 $db->closeConnection();
 
-// Default image path if no image is set
 $default_image = 'product_images/default.jpg';
 ?>
 <!DOCTYPE html>
@@ -50,7 +45,7 @@ $default_image = 'product_images/default.jpg';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Home</title>
+    <title>USERR KUAN</title>
     <link rel="stylesheet" href="user_home_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -96,7 +91,6 @@ function updateBuyNowTotal() {
     document.getElementById('buyNowTotal').textContent = '₱' + (quantity * price).toFixed(2);
 }
 
-// Add event listener to quantity input
 document.getElementById('buyNowQuantity').addEventListener('input', function() {
     updateBuyNowTotal();
 });
@@ -141,7 +135,6 @@ window.onclick = function(event) {
 </nav>
 
 <script>
-// Add event listener to view cart button
 document.getElementById('viewCartBtn').addEventListener('click', function(e) {
     e.preventDefault(); // Prevent default link behavior
     openCartModal(); // Call the existing cart modal function
@@ -349,7 +342,6 @@ document.getElementById('viewCartBtn').addEventListener('click', function(e) {
         let updateTimeout;
 
     function handleQuantityChange(cartId, input) {
-        // Just validate the input
         let quantity = parseInt(input.value);
         if (isNaN(quantity) || quantity < 1) {
             alert('Please enter a valid quantity');

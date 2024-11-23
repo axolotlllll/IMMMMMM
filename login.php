@@ -10,12 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = $db->openConnection();
 
     try {
-        // Fetch user by username
         $query = $conn->prepare("SELECT * FROM users WHERE username = ?");
         $query->execute([$username]);
         $user = $query->fetch(PDO::FETCH_ASSOC);
 
-        // Verify the password and check user type
         if ($user && $password === $user['password']) {
             // Store user ID, username, and user_type in session
             $_SESSION['user_id'] = $user['id'];
@@ -81,193 +79,289 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Celebrity Shop</title>
+    <title>LOGGGIN KUAN</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+        :root {
+            --gradient-speed: 20s;
+            --typing-speed: 3s;
+            --phrase-1-color: #6bcc33;
+            --phrase-2-color: #89d8f0;
+            --phrase-3-color: #BD10E0;
         }
 
         body {
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
-            background-size: 300% 300%;
-            animation: color 12s ease-in-out infinite;
-            padding: 2rem;
+            align-items: center;
+            font-family: 'Montserrat', sans-serif;
+            background: #000; /* Fallback color */
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes color {
-            0% {
-                background-position: 0 50%;
+        .video-background {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%) scale(1.02);
+            z-index: -1;
+            filter: brightness(0.7);
+            object-fit: cover;
+        }
+
+        .typewriter {
+            color: white;
+            margin-bottom: 30px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 100%;
+        }
+
+        .typewriter h1 {
+            font-size: 3.8em;
+            margin: 0;
+            white-space: nowrap;
+            overflow: visible;
+            position: relative;
+            transition: color 1s ease;
+            z-index: 2;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .typing-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: currentColor;
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            position: relative;
+            top: -2px;
+            opacity: 0.8;
+            transition: background-color 1s ease;
+        }
+
+        @media (max-width: 768px) {
+            .typewriter h1 {
+                font-size: 2.8em;
             }
-            50% {
-                background-position: 100% 50%;
+            .cursor {
+                width: 30px;
+                height: 30px;
             }
-            100% {
-                background-position: 0 50%;
+        }
+
+        @media (max-width: 480px) {
+            .typewriter h1 {
+                font-size: 2em;
+            }
+            .cursor {
+                width: 25px;
+                height: 25px;
             }
         }
 
         .login-container {
+            padding: 40px;
             width: 100%;
-            max-width: 420px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 2.5rem;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            transform: translateY(0);
-            transition: all 0.3s ease;
-        }
-
-        .login-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.47);
-        }
-
-        h1 {
-            color: white;
+            max-width: 400px;
             text-align: center;
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 20px;
             position: relative;
         }
 
-        .form-group i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.2rem;
-        }
-
-        input {
+        .form-group input {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            padding: 15px 25px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: transparent;
             color: white;
-            font-size: 1rem;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
 
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        input:focus {
+        .form-group input:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
         }
 
-        button {
-            width: 100%;
-            padding: 1rem;
+        .login-btn {
             background: rgba(255, 255, 255, 0.2);
-            border: none;
-            border-radius: 12px;
             color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 1rem;
         }
 
-        button:hover {
+        .login-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .error {
-            background: rgba(255, 87, 87, 0.1);
-            border: 1px solid rgba(255, 87, 87, 0.2);
-            color: #fff;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            backdrop-filter: blur(5px);
+        .register-text {
+            margin-top: 20px;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
         }
 
         .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: white;
-        }
-
-        .register-link a {
             color: white;
             text-decoration: none;
-            font-weight: 600;
+            display: inline-block;
             transition: all 0.3s ease;
         }
 
-        .register-link a:hover {
+        .register-link:hover {
+            transform: scale(1.05);
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 2rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            input, button {
-                padding: 0.8rem;
-            }
+        .error {
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="product_images/Creative Commons - Minecraft Parkour Gameplay.mp4" type="video/mp4">
+    </video>
     <div class="login-container">
-        <h1>Welcome Back!</h1>
-        <?php if (isset($error)): ?>
-            <div class="error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+        <div class="typewriter">
+            <div class="typing-container">
+                <h1></h1><span class="cursor"></span>
             </div>
+        </div>
+        <?php if (isset($error)): ?>
+            <div class="error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
         
-        <form method="POST">
+        <form method="POST" action="">
             <div class="form-group">
-                <i class="fas fa-user"></i>
                 <input type="text" name="username" placeholder="Username" required>
             </div>
-            
             <div class="form-group">
-                <i class="fas fa-lock"></i>
                 <input type="password" name="password" placeholder="Password" required>
             </div>
-            
-            <button type="submit">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
+            <button type="submit" class="login-btn">Login</button>
         </form>
-        <div class="register-link">
-            Don't have an account? <a href="register.php">Register here</a>
-        </div>
+        
+        <span class="register-text">Already have an account? <a href="register.php" class="register-link">Register here</a></span>
     </div>
+
+    <script>
+        // Video control
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.querySelector('.video-background');
+            if (video) {
+                video.addEventListener('loadedmetadata', function() {
+                    // Start from middle of the video
+                    video.currentTime = video.duration / 2;
+                    video.playbackRate = 1.5;
+                });
+            }
+        });
+
+        // Existing typing animation code
+        const phrases = [
+            { text: "ming gabiibuntaghapon", class: 'phrase-1' },
+            { text: "bossing", class: 'phrase-2' },
+            { text: "wehehaehhe", class: 'phrase-3' }
+        ];
+
+        const typingDelay = 50;  // Faster typing
+        const erasingDelay = 25; // Faster erasing
+        const newTextDelay = 500; // Shorter pause between phrases
+        const colorTransitionDelay = 699; // Color change speed
+
+        let textArrayIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+
+        const typewriterElement = document.querySelector('.typewriter h1');
+        const cursorElement = document.querySelector('.cursor');
+        const bodyElement = document.body;
+
+        function type() {
+            const currentPhrase = phrases[textArrayIndex];
+            const text = currentPhrase.text;
+
+            // Apply current phrase styles with a slight delay for smoother transition
+            setTimeout(() => {
+                bodyElement.className = currentPhrase.class;
+            }, colorTransitionDelay / 2);
+            
+            typewriterElement.style.color = getComputedStyle(document.documentElement)
+                .getPropertyValue(`--${currentPhrase.class}-color`);
+            cursorElement.style.color = getComputedStyle(document.documentElement)
+                .getPropertyValue(`--${currentPhrase.class}-color`);
+
+            if (isDeleting) {
+                charIndex--;
+            } else {
+                charIndex++;
+            }
+
+            typewriterElement.textContent = text.substring(0, charIndex);
+
+            if (!isDeleting && charIndex === text.length) {
+                setTimeout(() => {
+                    isDeleting = true;
+                }, newTextDelay);
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                textArrayIndex = (textArrayIndex + 1) % phrases.length;
+            }
+
+            const delay = isDeleting ? erasingDelay : typingDelay;
+            setTimeout(type, delay);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(type, newTextDelay);
+        });
+    </script>
 </body>
 </html>

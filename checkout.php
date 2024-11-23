@@ -13,9 +13,7 @@ $conn = $db->openConnection();
 try {
     $conn->beginTransaction();
 
-    // Check if this is a "Buy Now" purchase
     if (isset($_POST['buy_now']) && isset($_POST['product_id']) && isset($_POST['quantity'])) {
-        // Get product details
         $stmt = $conn->prepare("SELECT * FROM products WHERE product_id = ?");
         $stmt->execute([$_POST['product_id']]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
