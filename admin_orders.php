@@ -8,22 +8,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 1) {
     exit();
 }
 
-$db = new Database();
-$conn = $db->openConnection();
-
-// Update order status if requested
-if (isset($_POST['update_status']) && isset($_POST['order_id']) && isset($_POST['new_status'])) {
-    try {
-        $updateStatus = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
-        $updateStatus->execute([$_POST['new_status'], $_POST['order_id']]);
-        $_SESSION['success'] = "Order status updated successfully";
-    } catch (Exception $e) {
-        error_log("Error updating order status: " . $e->getMessage());
-        $_SESSION['error'] = "Error updating order status";
-    }
-}
+// Add no-cache headers
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 
 try {
+    $db = new Database();
+    $conn = $db->openConnection();
+
     // Get all orders with user information and order items
     $query = $conn->prepare("
         SELECT 
@@ -60,6 +53,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Order Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         :root {
             --primary-color: #5D6ECE;
@@ -81,298 +75,235 @@ try {
             background-color: var(--background-color);
             color: var(--text-color);
             line-height: 1.6;
+            padding: 20px;
         }
 
-        .order-container {
+        .container {
             max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .back-btn {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            transition: background-color 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background-color: color-mix(in srgb, var(--primary-color) 80%, black);
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--secondary-color);
-            margin-bottom: 30px;
-            font-weight: 600;
-        }
-
-        .success-message, .error-message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .success-message {
-            background-color: rgba(72, 187, 120, 0.1);
-            color: #48BB78;
-            border: 1px solid #48BB78;
-        }
-
-        .error-message {
-            background-color: rgba(245, 101, 101, 0.1);
-            color: #F56565;
-            border: 1px solid #F56565;
+            margin: 0 auto;
         }
 
         .order-card {
-            background-color: var(--card-background);
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            padding: 25px;
-            transition: box-shadow 0.3s ease;
-            animation: fadeIn 0.6s ease-out;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .order-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .order-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg, 
-                transparent, 
-                rgba(255,255,255,0.05), 
-                transparent
-            );
-            transform: rotate(-45deg);
-            transition: all 0.5s ease;
-        }
-
-        .order-card:hover::before {
-            top: -10%;
-            left: -10%;
-            background: linear-gradient(
-                45deg, 
-                transparent, 
-                rgba(255,255,255,0.1), 
-                transparent
-            );
+            padding: 20px;
+            border: 1px solid #E2E8F0;
         }
 
         .order-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 15px;
+            align-items: flex-start;
             margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #E2E8F0;
         }
 
         .order-info {
-            display: flex;
-            flex-direction: column;
+            flex: 1;
         }
 
-        .order-info strong {
+        .order-id {
+            font-size: 1.25rem;
             color: var(--primary-color);
-            font-size: 1.1em;
-            margin-bottom: 5px;
-        }
-
-        .order-status {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-bottom: 10px;
         }
 
-        .status-pending {
-            background-color: #FBD38D;
-            color: #744210;
-        }
-
-        .status-completed {
-            background-color: #68D391;
-            color: #22543D;
-        }
-
-        .status-cancelled {
-            background-color: #FEB2B2;
-            color: #822727;
-        }
-
-        .order-items {
-            background-color: var(--background-color);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .order-items p {
-            margin-bottom: 5px;
-            color: var(--secondary-color);
-        }
-
-        .status-form {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .status-select {
-            padding: 8px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            background-color: white;
-            color: var(--text-color);
-            flex-grow: 1;
-            margin-right: 15px;
-            transition: all 0.3s ease;
-            border-radius: 20px;
-            padding: 8px 15px;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 8px 10px;
-        }
-
-        .status-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        }
-
-        .order-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 15px;
-            border-radius: 20px;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .action-btn i {
-            margin-right: 5px;
-        }
-
-        .total-amount {
-            animation: pulse 2s infinite;
-            font-size: 1.3em;
-            color: var(--primary-color);
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-        }
-
-        .total-amount i {
-            margin-right: 10px;
-            color: var(--secondary-color);
-        }
-
-        .order-details {
-            display: flex;
-            align-items: center;
+        .customer-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
             margin-bottom: 15px;
         }
 
-        .order-details i {
-            color: var(--primary-color);
-            font-size: 1.2em;
+        .info-group {
+            background: #F8FAFC;
+            padding: 10px;
+            border-radius: 8px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .info-label {
+            font-size: 0.875rem;
+            color: #64748B;
+            margin-bottom: 4px;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        .info-value {
+            font-size: 1rem;
+            color: #1E293B;
+            font-weight: 500;
+        }
+
+        .order-items {
+            background: #F8FAFC;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .order-items-title {
+            font-size: 1rem;
+            color: #64748B;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-price {
+            font-weight: 500;
+            color: #047857;
+        }
+
+        .order-total {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #E2E8F0;
+        }
+
+        .total-label {
+            font-size: 1rem;
+            color: #64748B;
+            margin-right: 10px;
+        }
+
+        .total-amount {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #047857;
+        }
+
+        .status-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: white;
+            min-width: 150px;
+        }
+
+        .status-select:hover {
+            border-color: var(--primary-color);
+        }
+
+        .status-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(93, 110, 206, 0.2);
+        }
+
+        .status-select option {
+            padding: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        /* Status Colors */
+        .status-pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-processing {
+            background-color: #EDE9FE;
+            color: #5B21B6;
+            border: 1px solid #8B5CF6;
+        }
+
+        .status-shipped {
+            background-color: #CFF9E6;
+            color: #047857;
+            border: 1px solid #10B981;
+        }
+
+        .status-delivered {
+            background-color: #DCFCE7;
+            color: #15803D;
+            border: 1px solid #22C55E;
+        }
+
+        .status-cancelled {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background-color: #f8f9fa;
+            color: #1a1a1a;
+            text-decoration: none;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .back-btn:active {
+            transform: translateY(0);
+        }
+
+        .back-btn i {
+            font-size: 18px;
         }
 
         @media (max-width: 768px) {
-            .order-container {
-                padding: 0 10px;
-            }
-
-            .order-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .status-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .status-select {
-                margin-right: 0;
-                margin-bottom: 10px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .order-actions {
-                flex-direction: column;
-                align-items: stretch;
+            .customer-info {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <a href="index.php" class="back-btn">Back to Admin Panel</a>
-    
-    <div class="order-container">
+    <div class="container">
+        <a href="index.php" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back
+        </a>
         <h1>Order Management</h1>
-        
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="success-message"><?php echo $_SESSION['success']; ?></div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
 
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="error-message"><?php echo $_SESSION['error']; ?></div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
+        <div id="statusToast" class="toast-notification"></div>
 
         <?php if (empty($orders)): ?>
             <p>No orders found.</p>
@@ -381,40 +312,117 @@ try {
                 <div class="order-card">
                     <div class="order-header">
                         <div class="order-info">
-                            <h3>Order #<?php echo $order['id']; ?></h3>
-                            <p>
-                                <strong>Customer:</strong> <?php echo htmlspecialchars($order['username']); ?><br>
-                                <strong>Date:</strong> <?php echo date('F j, Y g:i A', strtotime($order['order_date'])); ?><br>
-                                <strong>Total Amount:</strong> <span class="total-amount"><i class="fas fa-money-bill-wave"></i> ₱<?php echo number_format($order['total_amount'], 2); ?></span>
-                            </p>
+                            <div class="order-id">Order #<?= $order['id'] ?></div>
+                            <div class="customer-info">
+                                <div class="info-group">
+                                    <div class="info-label">Customer</div>
+                                    <div class="info-value"><?= htmlspecialchars($order['username']) ?></div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Order Date</div>
+                                    <div class="info-value"><?= date('F j, Y g:i A', strtotime($order['order_date'])) ?></div>
+                                </div>
+                            </div>
                         </div>
-                        <span class="order-status status-<?php echo strtolower($order['status']); ?>">
-                            <?php echo ucfirst($order['status']); ?>
-                        </span>
+                        <div class="status-select-container">
+                            <?php
+                            $currentStatus = strtolower(trim($order['status']));
+                            $allowed_statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+                            if (!in_array($currentStatus, $allowed_statuses)) {
+                                $currentStatus = 'pending';
+                            }
+                            ?>
+                            <select class="status-select" data-order-id="<?= $order['id'] ?>">
+                                <option value="pending" <?= $currentStatus === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                <option value="processing" <?= $currentStatus === 'processing' ? 'selected' : '' ?>>Processing</option>
+                                <option value="shipped" <?= $currentStatus === 'shipped' ? 'selected' : '' ?>>Shipped</option>
+                                <option value="delivered" <?= $currentStatus === 'delivered' ? 'selected' : '' ?>>Delivered</option>
+                                <option value="cancelled" <?= $currentStatus === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                            </select>
+                            <span class="status-badge status-<?= $currentStatus ?>"><?= ucfirst($currentStatus) ?></span>
+                        </div>
                     </div>
-                    
                     <div class="order-items">
-                        <strong>Order Items:</strong><br>
-                        <?php echo $order['order_items']; ?>
+                        <div class="order-items-title">Order Items</div>
+                        <div class="item-list">
+                            <?php
+                            $items = explode('<br>', $order['order_items']);
+                            foreach ($items as $item):
+                                if (trim($item) === '') continue;
+                                preg_match('/(\d+)x (.*?) \(₱([\d,]+\.\d{2}) each\)/', $item, $matches);
+                                if (count($matches) >= 4):
+                                    $quantity = $matches[1];
+                                    $productName = $matches[2];
+                                    $price = $matches[3];
+                            ?>
+                                <div class="order-item">
+                                    <div class="item-details">
+                                        <span class="item-name"><?= htmlspecialchars($productName) ?></span>
+                                        <span class="item-quantity">(<?= $quantity ?>x)</span>
+                                    </div>
+                                    <div class="item-price">₱<?= $price ?> each</div>
+                                </div>
+                            <?php 
+                                endif;
+                            endforeach; 
+                            ?>
+                        </div>
+                        <div class="order-total">
+                            <span class="total-label">Total Amount:</span>
+                            <span class="total-amount">₱<?= number_format($order['total_amount'], 2) ?></span>
+                        </div>
                     </div>
-
-                    <div class="order-details">
-                        <i class="fas fa-user"></i> <?php echo htmlspecialchars($order['username']); ?>
-                        <i class="fas fa-calendar-alt"></i> <?php echo date('F j, Y g:i A', strtotime($order['order_date'])); ?>
-                    </div>
-
-                    <form class="status-form" method="POST">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <select name="new_status" class="status-select">
-                            <option value="pending" <?php echo $order['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="completed" <?php echo $order['status'] == 'completed' ? 'selected' : ''; ?>>Completed</option>
-                            <option value="cancelled" <?php echo $order['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                        </select>
-                        <button type="submit" name="update_status" class="action-btn">Update Status <i class="fas fa-edit"></i></button>
-                    </form>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <script>
+    $(document).ready(function() {
+        function showToast(message, isError = false) {
+            const toast = $('#statusToast');
+            toast.text(message);
+            toast.removeClass('success error').addClass(isError ? 'error' : 'success');
+            toast.fadeIn();
+            setTimeout(() => toast.fadeOut(), 3000);
+        }
+
+        $('.status-select').change(function() {
+            const select = $(this);
+            const orderId = select.data('order-id');
+            const newStatus = select.val();
+            const previousStatus = select.find('option:selected').attr('data-previous-status') || select.val();
+
+            $.ajax({
+                url: 'update_order_status.php',
+                method: 'POST',
+                data: {
+                    order_id: orderId,
+                    status: newStatus
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showToast('Status updated successfully');
+                        select.find('option:selected').attr('data-previous-status', newStatus);
+                        
+                        // Update status badge if it exists
+                        const statusBadge = select.closest('.order-card').find('.status-badge');
+                        if (statusBadge.length) {
+                            statusBadge.attr('class', 'status-badge status-' + newStatus.toLowerCase())
+                                     .text(newStatus.charAt(0).toUpperCase() + newStatus.slice(1));
+                        }
+                    } else {
+                        showToast(response.message || 'Failed to update status', true);
+                        select.val(previousStatus);
+                    }
+                },
+                error: function() {
+                    showToast('Error updating status', true);
+                    select.val(previousStatus);
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>

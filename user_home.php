@@ -9,32 +9,64 @@ if (!isset($_SESSION['user_id'])) {
 $username = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest';
 
 $greetings = [
-    "Maayong pagbalik, $username ang Gamhanan.",
-    "Ah, $username ang Mahimayaon mipauli na!",
-    "Pagdayeg, $username ang Maalamon.",
-    "Himaya kanimo, $username ang Isug!",
-    "Maayong pagbalik, $username ang Banggiitan.",
-    "Ang gingharian nagpasalamat sa imong pagbalik, $username ang Mahalangdon.",
-    "Usa ka halangdon nga pagbalik, $username ang Kusgan!"
+    "Maayong pagbalik, <span class='username-highlight'>$username</span> ang Gamhanan.",
+    "Ah, <span class='username-highlight'>$username</span> ang Mahimayaon mipauli na!",
+    "Pagdayeg, <span class='username-highlight'>$username</span> ang Maalamon.",
+    "Himaya kanimo, <span class='username-highlight'>$username</span> ang Isug!",
+    "Maayong pagbalik, <span class='username-highlight'>$username</span> ang Banggiitan.",
+    "Ang gingharian nagpasalamat sa imong pagbalik, <span class='username-highlight'>$username</span> ang Mahalangdon.",
+    "Usa ka halangdon nga pagbalik, <span class='username-highlight'>$username</span> ang Kusgan!"
 ];
 
 $greeting = $greetings[array_rand($greetings)];
-
-
-
 
 require_once 'connection.php';
 // Fetch products from the database
 $db = new Database();
 $conn = $db->openConnection();
 
-$query = $conn->prepare("
-    SELECT p.product_id, p.product_name, p.description, p.price, c.category_name, p.quantity, p.image_path
+// Initialize search variables
+$search = '';
+$category_filter = '';
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $search = $_POST['search'] ?? '';
+    $category_filter = $_POST['category'] ?? '';
+}
+
+// Base query
+$query = "
+    SELECT p.product_id, p.product_name, p.description, p.price, c.category_name, p.quantity, p.image_path, p.date_created
     FROM products p
     JOIN categories c ON p.category_id = c.category_id
-");
-$query->execute();
-$products = $query->fetchAll(PDO::FETCH_ASSOC);
+    WHERE 1=1
+";
+
+// Add search conditions
+if ($search) {
+    $query .= " AND p.product_name LIKE :search";
+}
+
+if ($category_filter) {
+    $query .= " AND p.category_id = :category";
+}
+
+$stmt = $conn->prepare($query);
+
+// Bind parameters
+if ($search) {
+    $stmt->bindValue(':search', "%$search%");
+}
+if ($category_filter) {
+    $stmt->bindValue(':category', $category_filter);
+}
+
+$stmt->execute();
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch categories for the filter
+$categoryQuery = $conn->query("SELECT * FROM categories");
+$categories = $categoryQuery->fetchAll(PDO::FETCH_ASSOC);
 
 $db->closeConnection();
 
@@ -48,68 +80,236 @@ $default_image = 'product_images/default.jpg';
     <title>USERR KUAN</title>
     <link rel="stylesheet" href="user_home_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add jQuery UI for autocomplete -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <style>
+        /* Search Form Styles */
+        #searchForm {
+            max-width: 800px;
+            margin: 30px 0 40px 40px;
+            padding: 0;
+        }
 
+        .search-group {
+            display: grid;
+            grid-template-columns: minmax(250px, 2fr) minmax(150px, 1fr);
+            gap: 200px;
+            align-items: center;
+        }
 
+        /* Input Wrappers */
+        .search-input-wrapper,
+        .filter-wrapper {
+            position: relative;
+            width: 100%;
+        }
 
-<script>
-function openBuyNowModal(productId, productName, price, maxQty) {
-    document.getElementById('buyNowProductId').value = productId;
-    document.getElementById('buyNowProductName').textContent = productName;
-    document.getElementById('buyNowPrice').textContent = '₱' + parseFloat(price).toFixed(2);
-    document.getElementById('maxQuantity').value = maxQty;
-    document.getElementById('buyNowQuantity').max = maxQty;
-    document.getElementById('buyNowFormQuantity').value = 1;
-    updateBuyNowTotal();
-    document.getElementById('buyNowModal').style.display = 'flex';
-}
+        /* Base Input Styles */
+        .search-input,
+        .category-select {
+            width: 100%;
+            padding: 12px 40px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(229, 231, 235, 0.3);
+            border-radius: 25px;
+            font-size: 0.95rem;
+            color: #4B5563;
+            transition: all 0.3s ease;
+            height: 45px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 
+                       0 1px 3px rgba(0, 0, 0, 0.08);
+        }
 
-function closeBuyNowModal() {
-    document.getElementById('buyNowModal').style.display = 'none';
-}
+        .search-input::placeholder {
+            color: #9CA3AF;
+        }
 
-function updateBuyNowTotal() {
-    const quantity = parseInt(document.getElementById('buyNowQuantity').value);
-    const price = parseFloat(document.getElementById('buyNowPrice').textContent.replace('₱', ''));
-    const maxQty = parseInt(document.getElementById('maxQuantity').value);
-    
-    // Validate quantity
-    if (quantity > maxQty) {
-        document.getElementById('buyNowQuantity').value = maxQty;
-        document.getElementById('buyNowFormQuantity').value = maxQty;
-        updateBuyNowTotal();
-        return;
-    }
-    
-    if (quantity < 1) {
-        document.getElementById('buyNowQuantity').value = 1;
+        /* Focus States */
+        .search-input:focus,
+        .category-select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2),
+                       0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hover States */
+        .search-input:hover,
+        .category-select:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(229, 231, 235, 0.4);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12),
+                       0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Icons */
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            font-size: 1rem;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+
+        /* Icon Color Change on Focus */
+        .search-input:focus ~ .input-icon,
+        .category-select:focus ~ .input-icon {
+            color: #6366F1;
+        }
+
+        /* Select Specific Styles */
+        .category-select {
+            appearance: none;
+            padding-right: 40px;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .search-group {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            #searchForm {
+                padding: 0 20px;
+                margin: 20px auto 30px;
+            }
+        }
+    </style>
+    <script>
+    // Buy Now Modal Functions
+    function openBuyNowModal(productId, productName, price, maxQty) {
+        document.getElementById('buyNowProductId').value = productId;
+        document.getElementById('buyNowProductName').textContent = productName;
+        document.getElementById('buyNowPrice').textContent = '₱' + parseFloat(price).toFixed(2);
+        document.getElementById('maxQuantity').value = maxQty;
+        document.getElementById('buyNowQuantity').max = maxQty;
         document.getElementById('buyNowFormQuantity').value = 1;
         updateBuyNowTotal();
-        return;
+        document.getElementById('buyNowModal').style.display = 'flex';
     }
-    
-    document.getElementById('buyNowFormQuantity').value = quantity;
-    document.getElementById('buyNowTotal').textContent = '₱' + (quantity * price).toFixed(2);
-}
 
-document.getElementById('buyNowQuantity').addEventListener('input', function() {
-    updateBuyNowTotal();
-});
-
-function submitBuyNow() {
-    const quantity = document.getElementById('buyNowQuantity').value;
-    document.getElementById('buyNowFormQuantity').value = quantity;
-    document.getElementById('buyNowForm').submit();
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const buyNowModal = document.getElementById('buyNowModal');
-    if (event.target == buyNowModal) {
-        buyNowModal.style.display = 'none';
+    function closeBuyNowModal() {
+        document.getElementById('buyNowModal').style.display = 'none';
     }
-}
-</script>
 
+    function updateBuyNowTotal() {
+        const quantity = parseInt(document.getElementById('buyNowQuantity').value);
+        const price = parseFloat(document.getElementById('buyNowPrice').textContent.replace('₱', ''));
+        const maxQty = parseInt(document.getElementById('maxQuantity').value);
+        
+        // Validate quantity
+        if (quantity > maxQty) {
+            document.getElementById('buyNowQuantity').value = maxQty;
+            document.getElementById('buyNowFormQuantity').value = maxQty;
+            updateBuyNowTotal();
+            return;
+        }
+        
+        if (quantity < 1) {
+            document.getElementById('buyNowQuantity').value = 1;
+            document.getElementById('buyNowFormQuantity').value = 1;
+            updateBuyNowTotal();
+            return;
+        }
+        
+        document.getElementById('buyNowFormQuantity').value = quantity;
+        document.getElementById('buyNowTotal').textContent = '₱' + (quantity * price).toFixed(2);
+    }
+
+    function submitBuyNow() {
+        const quantity = document.getElementById('buyNowQuantity').value;
+        document.getElementById('buyNowFormQuantity').value = quantity;
+        document.getElementById('buyNowForm').submit();
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const buyNowModal = document.getElementById('buyNowModal');
+        const cartModal = document.getElementById('cartModal');
+        if (event.target == buyNowModal) {
+            buyNowModal.style.display = 'none';
+        }
+        if (event.target == cartModal) {
+            cartModal.style.display = 'none';
+        }
+    }
+
+    $(document).ready(function() {
+        // Function to perform the search
+        function performSearch() {
+            const formData = $('#searchForm').serialize();
+            
+            $.ajax({
+                url: 'search_products.php',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    $('.product-container').html(response);
+                }
+            });
+        }
+
+        // Debounce function to limit how often a function can fire
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Debounced search function
+        const debouncedSearch = debounce(performSearch, 300);
+
+        // Handle search input changes
+        $('#search').on('input', debouncedSearch);
+
+        // Handle category select changes
+        $('.category-select').on('change', performSearch);
+
+        // Autocomplete functionality
+        $("#search").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "fetch_products.php",
+                    dataType: "json",
+                    data: {
+                        term: request.term
+                    },
+                    success: function(data) {
+                        response(data);
+                    }
+                });
+            },
+            minLength: 2,
+            select: function(event, ui) {
+                $(this).val(ui.item.value);
+                performSearch();
+            }
+        });
+
+        // Prevent form submission
+        $('#searchForm').on('submit', function(e) {
+            e.preventDefault();
+            performSearch();
+        });
+    });
+    </script>
 </head>
 <body>
 
@@ -143,6 +343,35 @@ document.getElementById('viewCartBtn').addEventListener('click', function(e) {
 
 <div class="content-wrapper">
     <h2><?= $greeting ?></h2>
+    
+    <!-- Search Form -->
+    <form id="searchForm" method="POST">
+        <div class="search-group">
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       id="search" 
+                       name="search" 
+                       placeholder="Search products..." 
+                       value="<?= htmlspecialchars($search) ?>" 
+                       class="search-input"
+                       autocomplete="off">
+                <i class="fas fa-search input-icon"></i>
+            </div>
+            
+            <div class="filter-wrapper">
+                <select name="category" class="category-select">
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?= $category['category_id'] ?>" <?= $category_filter == $category['category_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($category['category_name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <i class="fas fa-tag input-icon"></i>
+            </div>
+        </div>
+    </form>
+
     <!-- Buy Now Modal -->
     <div id="buyNowModal" class="buy-now-modal">
         <div class="buy-now-modal-content">
@@ -472,10 +701,6 @@ document.getElementById('viewCartBtn').addEventListener('click', function(e) {
         }
     }
     </script>
-
-</div>
-</body>
-</html>
 
 </div>
 </body>
